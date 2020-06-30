@@ -30,3 +30,20 @@ func New(raw string) *Version {
 		minor: minor,
 		patch: patch}
 }
+
+// IsNewer ...
+func (version Version) IsNewer(other Version) bool {
+	if version.major > other.major {
+		return true
+	}
+
+	if version.minor > other.minor {
+		return true
+	}
+
+	if version.patch > other.patch {
+		return true
+	}
+
+	return false
+}

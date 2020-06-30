@@ -8,33 +8,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
+
+	"github.com/adborbas/latest_version_step/version"
 )
-
-type version struct {
-	major, minor, patch int
-}
-
-func parse(raw string) *version {
-	values := strings.Split(raw, ".")
-
-	if len(values) != 3 {
-		return nil
-	}
-
-	major, err := strconv.Atoi(values[0])
-	minor, err := strconv.Atoi(values[1])
-	patch, err := strconv.Atoi(values[2])
-	if err != nil {
-		return nil
-	}
-
-	return &version{
-		major: major,
-		minor: minor,
-		patch: patch}
-}
 
 func main() {
 
@@ -55,14 +32,9 @@ func main() {
 		failf("Could not walk directories. %s", err)
 	}
 
-	fmt.Println(selectedStep)
-	for _, info := range infos {
-		fmt.Println(info.Name())
-	}
-
 	sort.Slice(infos, func(i, j int) bool {
-		iVersion := parse(infos[i].Name())
-		jVersion := parse(infos[j].Name())
+		iVersion := version.New(infos[i].Name())
+		jVersion := version.New(infos[j].Name())
 		if iVersion == nil {
 			return true
 		}
@@ -70,13 +42,11 @@ func main() {
 			return false
 		}
 
-		if iVersion.major != jVersion.major {
-			return iVersion.major < jVersion.major
-		}
-		if iVersion.minor != jVersion.minor {
-			return iVersion.major < jVersion.major
-		}
+		return !iVersion.IsNewer(*jVersion)
 	})
+
+	lastInfo := infos[len(infos)-1]
+	fmt.Printf("Latest version of %s is: %s \n", stepID, lastInfo.Name())
 }
 
 func directories(root string) ([]string, error) {
