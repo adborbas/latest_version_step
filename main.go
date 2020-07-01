@@ -15,18 +15,21 @@ import (
 
 func main() {
 
+	repo := make(chan string)
+	fail := make(chan error)
+	go cloneSteplib(repo, fail)
+
 	stepID, err := readStepID()
 	if err != nil {
 		failf("Could not read step ID. %s", err)
 	}
 
-	repo, err := cloneSteplib()
-	defer os.RemoveAll(repo)
+	rep, err := <-repo, <-fail
 	if err != nil {
-		failf("Could not read step ID. %s", err)
+		failf("Could not clone repo. %s", err)
 	}
 
-	selectedStep := filepath.Join(repo, "steps", stepID)
+	selectedStep := filepath.Join(rep, "steps", stepID)
 	infos, err := ioutil.ReadDir(selectedStep)
 	if err != nil {
 		failf("Could not walk directories. %s", err)
@@ -35,6 +38,7 @@ func main() {
 	versions := orderByVersion(infos)
 	lastVersion := versions[len(versions)-1]
 	fmt.Printf("Latest version of %s is: %s \n", stepID, lastVersion)
+	defer os.RemoveAll(rep)
 }
 
 func orderByVersion(unordered []os.FileInfo) []version.Version {
@@ -76,18 +80,25 @@ func failf(msg string, args ...interface{}) {
 	os.Exit(1)
 }
 
-func cloneSteplib() (string, error) {
-	tmpDir, err := tempDir()
-	if err != nil {
-		return "", fmt.Errorf("Could not create tempDir. %s", err)
+func cloneSteplib(repo chan string, err chan error) {
+	defer func() {
+		close(err)
+		close(repo)
+	}()
+
+	tmpDir, fail := tempDir()
+	if fail != nil {
+		err <- fmt.Errorf("Could not create tempDir. %s", fail)
+		return
 	}
 
 	cmd := exec.Command("git", "clone", "https://github.com/bitrise-io/bitrise-steplib.git", tmpDir)
-	if err = cmd.Run(); err != nil {
-		return "", fmt.Errorf("Could not clone git repo. %s", err)
+	if fail = cmd.Run(); fail != nil {
+		err <- fmt.Errorf("Could not clone git repo. %s", fail)
+		return
 	}
 
-	return tmpDir, nil
+	repo <- tmpDir
 }
 
 func readStepID() (string, error) {
