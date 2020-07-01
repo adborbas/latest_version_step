@@ -86,3 +86,24 @@ func Test_IsNewer(t *testing.T) {
 		require.Equal(t, scenario.isNewer, scenario.left.IsNewer(scenario.right))
 	}
 }
+
+func Test_ToString(t *testing.T) {
+	scenarios := []struct {
+		version  Version
+		expected string
+	}{
+		{
+			version:  Version{1, 0, 0},
+			expected: "1.0.0",
+		},
+		{
+			version:  Version{1, 1, 1},
+			expected: "1.1.1",
+		},
+	}
+
+	for _, scenario := range scenarios {
+		actual := scenario.version.String()
+		require.Equal(t, scenario.expected, actual)
+	}
+}

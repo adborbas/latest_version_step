@@ -1,6 +1,7 @@
 package version
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -46,4 +47,8 @@ func (version Version) IsNewer(other Version) bool {
 	}
 
 	return false
+}
+
+func (version Version) String() string {
+	return fmt.Sprintf("%d.%d.%d", version.major, version.minor, version.patch)
 }

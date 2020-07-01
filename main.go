@@ -32,21 +32,27 @@ func main() {
 		failf("Could not walk directories. %s", err)
 	}
 
-	sort.Slice(infos, func(i, j int) bool {
-		iVersion := version.New(infos[i].Name())
-		jVersion := version.New(infos[j].Name())
-		if iVersion == nil {
-			return true
-		}
-		if jVersion == nil {
-			return false
+	versions := orderByVersion(infos)
+	lastVersion := versions[len(versions)-1]
+	fmt.Printf("Latest version of %s is: %s \n", stepID, lastVersion)
+}
+
+func orderByVersion(unordered []os.FileInfo) []version.Version {
+	versions := []version.Version{}
+	for _, fileinfo := range unordered {
+		if version := version.New(fileinfo.Name()); version != nil {
+			versions = append(versions, *version)
 		}
 
-		return !iVersion.IsNewer(*jVersion)
+	}
+	sort.Slice(versions, func(i, j int) bool {
+		iVersion := versions[i]
+		jVersion := versions[j]
+
+		return !iVersion.IsNewer(jVersion)
 	})
 
-	lastInfo := infos[len(infos)-1]
-	fmt.Printf("Latest version of %s is: %s \n", stepID, lastInfo.Name())
+	return versions
 }
 
 func directories(root string) ([]string, error) {
